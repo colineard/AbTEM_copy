@@ -3,7 +3,7 @@ from abc import ABCMeta, abstractmethod
 from copy import copy
 from functools import partial
 from typing import Callable, Iterable, Mapping, Sequence, Union
-
+import matplotlib.pyplot as plt
 import numpy as np
 
 from abtem import stack
@@ -670,7 +670,40 @@ class RegularizedPtychographicOperator(AbstractPtychographicOperator):
                 )
                 .build(lazy=False)
                 .array
+                
             )
+
+            #######################################################绘制初始化探针
+            # probe_2d = self._probes
+            # # 3. 计算强度和相位
+            # intensity = np.abs(probe_2d)**2
+            # phase = np.angle(probe_2d)
+
+            # # --- 4. 智能相位掩膜 (Masking) ---
+            # # 相位在强度为0的地方全是噪声，把强度小于最大值 5% 的地方挖掉，不显示相位
+            # mask = intensity < (intensity.max() * 0.000005)
+            # phase_masked = np.ma.masked_where(mask, phase)
+
+            # # 5. 绘图
+            # fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+
+            # # --- 左图：强度 (Intensity) ---
+            # im1 = axes[0].imshow(intensity, cmap='inferno', origin='lower')
+            # axes[0].set_title("Probe Intensity")
+            # plt.colorbar(im1, ax=axes[0], fraction=0.046, pad=0.04)
+
+            # # --- 右图：相位 (Phase) ---
+            # # 使用 'twilight' 色图，因为 -pi 和 pi 是连续的
+            # im2 = axes[1].imshow(phase_masked, cmap='twilight', origin='lower', vmin=-np.pi, vmax=np.pi)
+            # axes[1].set_title("Probe Phase (Masked)")
+            # cbar = plt.colorbar(im2, ax=axes[1], fraction=0.046, pad=0.04)
+            # cbar.set_ticks([-np.pi, 0, np.pi])
+            # cbar.set_ticklabels([r'$-\pi$', '0', r'$\pi$'])
+            # # 设置背景色以便看清被 Mask 掉的区域
+            # axes[1].set_facecolor('#333333')
+
+            # plt.tight_layout()
+            # plt.show()
         else:
             if isinstance(self._probes, Probe):
                 if self._probes.gpts != self._region_of_interest_shape:
@@ -680,7 +713,37 @@ class RegularizedPtychographicOperator(AbstractPtychographicOperator):
                 )
             else:
                 self._probes = copy_to_device(self._probes, self._device)
+        ######################################################绘制初始化探针
+        probe_2d = self._probes
+        # 3. 计算强度和相位
+        intensity = np.abs(probe_2d)**2
+        phase = np.angle(probe_2d)
 
+        # --- 4. 智能相位掩膜 (Masking) ---
+        # 相位在强度为0的地方全是噪声，把强度小于最大值 5% 的地方挖掉，不显示相位
+        mask = intensity < (intensity.max() * 0.000005)
+        phase_masked = np.ma.masked_where(mask, phase)
+
+        # 5. 绘图
+        fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+
+        # --- 左图：强度 (Intensity) ---
+        im1 = axes[0].imshow(intensity, cmap='inferno', origin='lower')
+        axes[0].set_title("Probe Intensity")
+        plt.colorbar(im1, ax=axes[0], fraction=0.046, pad=0.04)
+
+        # --- 右图：相位 (Phase) ---
+        # 使用 'twilight' 色图，因为 -pi 和 pi 是连续的
+        im2 = axes[1].imshow(phase_masked, cmap='twilight', origin='lower', vmin=-np.pi, vmax=np.pi)
+        axes[1].set_title("Probe Phase (Masked)")
+        cbar = plt.colorbar(im2, ax=axes[1], fraction=0.046, pad=0.04)
+        cbar.set_ticks([-np.pi, 0, np.pi])
+        cbar.set_ticklabels([r'$-\pi$', '0', r'$\pi$'])
+        # 设置背景色以便看清被 Mask 掉的区域
+        axes[1].set_facecolor('#333333')
+
+        plt.tight_layout()
+        plt.show()
         return self
 
     @staticmethod
@@ -782,7 +845,7 @@ class RegularizedPtychographicOperator(AbstractPtychographicOperator):
         exit_waves: np.ndarray,
         modified_exit_waves: np.ndarray,
         diffraction_patterns: np.ndarray,
-        fix_probe: bool = False,
+        fix_probe: bool = True,
         position_correction: Callable = None,
         sobel: Callable = None,
         reconstruction_parameters: Mapping[str, float] = None,

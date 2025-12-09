@@ -245,23 +245,23 @@ class ComputableList(list):
         """
 
         computables = []
-        with zarr.open(url, mode="w") as root:
-            for i, has_array in enumerate(self):
-                has_array = has_array.ensure_lazy()
+        root = zarr.open(url, mode="w")
+        for i, has_array in enumerate(self):
+            has_array = has_array.ensure_lazy()
 
-                array = has_array.copy_to_device("cpu").array
+            array = has_array.copy_to_device("cpu").array
 
-                computables.append(
-                    array.to_zarr(
-                        url, compute=False, component=f"array{i}", overwrite=overwrite
-                    )
+            computables.append(
+                array.to_zarr(
+                    url, compute=False, component=f"array{i}", overwrite=overwrite
                 )
-                packed_kwargs = has_array._pack_kwargs(
-                    has_array._copy_kwargs(exclude=("array",))
-                )
+            )
+            packed_kwargs = has_array._pack_kwargs(
+                has_array._copy_kwargs(exclude=("array",))
+            )
 
-                root.attrs[f"kwargs{i}"] = packed_kwargs
-                root.attrs[f"type{i}"] = has_array.__class__.__name__
+            root.attrs[f"kwargs{i}"] = packed_kwargs
+            root.attrs[f"type{i}"] = has_array.__class__.__name__
 
         if not compute:
             return computables
